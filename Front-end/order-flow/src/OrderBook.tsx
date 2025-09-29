@@ -1,6 +1,7 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { Table } from "./components/ui/table"
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { Server } from "http";
 
 type OrderRow = {
     bidSize : number;
@@ -9,21 +10,28 @@ type OrderRow = {
     askSize : number;
 }
 
-const orderBookData: OrderRow[] = [
-  { bidSize: 120, bidPrice: 150.25, askPrice: 150.50, askSize: 80 },
-  { bidSize: 150, bidPrice: 150.00, askPrice: 150.75, askSize: 100 },
-  { bidSize: 100, bidPrice: 149.75, askPrice: 151.00, askSize: 120 },
-  { bidSize: 80, bidPrice: 149.50, askPrice: 151.25, askSize: 150 },
-  { bidSize: 120, bidPrice: 149.25, askPrice: 151.50, askSize: 100 },
-  { bidSize: 100, bidPrice: 149.00, askPrice: 151.75, askSize: 80 },
-  { bidSize: 150, bidPrice: 148.75, askPrice: 152.00, askSize: 120 },
-  { bidSize: 80, bidPrice: 148.50, askPrice: 152.25, askSize: 100 },
-  { bidSize: 120, bidPrice: 148.25, askPrice: 152.50, askSize: 150 },
-  { bidSize: 100, bidPrice: 148.00, askPrice: 152.75, askSize: 80 },
-];
-
-
 const OrderBook : React.FC = () =>{
+
+    const [orderBookData , setOrder] = useState<OrderRow[]>([]);
+
+    useEffect(()=>{
+        const ws = new WebSocket("ws://localhost:9001");
+
+        ws.onopen = () =>{
+            console.log('Connected to Server');
+        };
+
+        ws.onmessage = (event) =>{
+            const data : OrderRow[] = JSON.parse(event.data);
+            setOrder(data);
+        };
+
+        ws.onclose = () =>{console.log("closed")};
+        ws.onerror = (err) =>{console.log(err)};
+
+        return ()=> ws.close();
+
+    },[]);
 
     return(
     <section className="px-6 py-0 ">
