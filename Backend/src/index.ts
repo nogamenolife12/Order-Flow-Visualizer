@@ -25,7 +25,7 @@ app.ws("\*",{
   let interval : NodeJS.Timer;
   interval = setInterval(()=>{
      ws.send(JSON.stringify(orderBookData))
-  },1000);
+  },10000);
 
     (ws as any).interval = interval;
   
