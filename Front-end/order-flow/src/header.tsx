@@ -4,7 +4,7 @@ import { Button } from "./components/ui/button";
 
 const Header : React.FC = () => {
     return (
-        <header className="w-screen border-b border-b-white/10 border-[#e1ebe3] bg-[#0D120E] text-white">
+        <header className="w-full border-b border-b-white/10 border-[#e1ebe3] bg-[#0D120E] text-white">
             <div className="mx-auto flex max-w-7xl items-center px-6 py-3">
                 {/* Left: Logo */}
                 <div className="flex items-center space-x-2">

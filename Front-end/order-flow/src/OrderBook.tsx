@@ -15,15 +15,20 @@ const OrderBook : React.FC = () =>{
     const [orderBookData , setOrder] = useState<OrderRow[]>([]);
 
     useEffect(()=>{
-        const ws = new WebSocket("ws://localhost:9001");
+        const ws = new WebSocket("ws://localhost:9001/orderbook");
 
         ws.onopen = () =>{
             console.log('Connected to Server');
         };
 
-        ws.onmessage = (event) =>{
-            const data : OrderRow[] = JSON.parse(event.data);
-            setOrder(data);
+        ws.onmessage = (event) => {
+            const newRow: OrderRow = JSON.parse(event.data);
+            setOrder((prev) => {
+                const updated = [...prev, newRow]; // append new row
+                if (updated.length > 10) updated.shift(); // keep max 10 rows
+                return updated;
+            });
+            
         };
 
         ws.onclose = () =>{console.log("closed")};
@@ -34,8 +39,8 @@ const OrderBook : React.FC = () =>{
     },[]);
 
     return(
-    <section className="px-6 py-0 ">
-        <h2 className="text-lg text-white font-semibold mb-4">Order Book</h2>
+    <section className="px-6 py-0 min-h-[500px]">
+        <h2 className="text-lg text-white font-semibold mb-4">Passive Actvity</h2>
         <div className="overflow-x-auto">
             <table className="min-w-full bg-[#0D120E] rounded-md border border-[#212D21]">
                 <thead>

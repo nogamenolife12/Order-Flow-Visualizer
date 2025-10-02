@@ -1,44 +1,77 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 type SaleRow = {
-    time : String;
-    price : number;
+    T : number;
+    p: string;
 }
 
-const timeSalesData: SaleRow[] = [
-  { time: "10:30:00", price: 150.50 },
-  { time: "10:30:01", price: 150.75 },
-  { time: "10:30:02", price: 150.25 },
-  { time: "10:30:03", price: 150.50 },
-  { time: "10:30:04", price: 150.00 },
-  { time: "10:30:05", price: 150.25 },
-  { time: "10:30:06", price: 150.75 },
-  { time: "10:30:07", price: 150.50 },
-  { time: "10:30:08", price: 150.00 },
-  { time: "10:30:09", price: 150.25 },
-];
+
+
 
 const TimeAndSales : React.FC = () => {
+    const[timeSalesData,setTnD] = useState<SaleRow[]>([]); 
+
+     const formatTime = (timestamp: number) => {
+         return new Date(timestamp).toLocaleTimeString('en-US', { 
+            hour12: true,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }).replace(/ AM| PM/, '');
+    };
+
+    useEffect(()=>{
+        const ws = new WebSocket("ws://localhost:9001/time-sales");
+
+        ws.onopen = () =>{
+            console.log("T&D connected");
+        };
+
+        ws.onmessage = (event) =>{
+           
+            let data = JSON.parse(event.data);
+
+             setTnD(prev =>[
+                {
+                    T : data.T,
+                    p : data.p
+                },
+                ...prev.slice(0,9)
+             ]);
+
+        };
+
+        ws.onclose = ()=>{console.log("TnD closed")};
+        ws.onerror = (err) => {console.log(err)};
+
+        return() => ws.close();
+    },[]);
+
     return(
-        <section className=" my-4 w-[350px] min-w-[300px] max-w-[400px] px-6 py-4 ">
+        <section className=" my-4 w-[350px] min-w-[300px] max-w-[400px] px-6 py-4 min-h-[360px]">
             <h2 className="text-lg font-semibold mb-3 text-white">Time & Sales</h2>
             <div className="rounded-md border border-[#212D21] bg-[#0D120E] overflow-x-auto">
                 <table className="min-w-full rounded-md">
-                    <thead>
+                    <thead >
                         <tr className="bg-[#161F16]">
                             <th className="px-8 py-3 text-left text-xs font-medium text-[#B0B8B2]">Time</th>
                             <th className="px-8 py-3 text-left text-xs font-medium text-[#B0B8B2]">Price</th>
                         </tr>
                     </thead>
                     <tbody>
-                       {timeSalesData.map((row,idx) =>(
-                        <tr key={idx} className="border-t  border-[#212D21]">
-                            <td className="px-8 py-4 text-[#B0B8B2] text-base ">{row.time}</td>
-                            <td className="px-8 py-4 text-[#B0B8B2] text-base ">{row.price.toFixed(2)}</td>
-                        </tr>
-                       ))}
+                      {timeSalesData.map((row, idx) => (
+                            <tr key={idx} className="border-t border-[#212D21]">
+                                <td className="px-8 py-4 text-[#B0B8B2] text-base">
+                                    {formatTime(row.T)}
+                                </td>
+                                <td className="px-8 py-4 text-[#B0B8B2] text-base">
+                                    {parseFloat(row.p).toFixed(2)}
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
+                
             </div>
         </section>
 

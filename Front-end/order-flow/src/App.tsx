@@ -12,7 +12,7 @@ import DashboardLayout from './Graphs';
 function App() {
   return (
     <>
-    <body className='bg-[#0D120E]'></body>
+   
     <Header></Header>
     <div className='flex justify-around'>
     <TimeAndSales></TimeAndSales>

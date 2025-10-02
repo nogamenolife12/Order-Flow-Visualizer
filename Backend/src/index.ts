@@ -15,17 +15,34 @@ const orderBookData = [
   { bidSize: 100, bidPrice: 148.00, askPrice: 152.75, askSize: 80 },
 ];
 
+// const timeSalesData = [
+//   { time: "10:30:00", price: 150.50 },
+//   { time: "10:30:01", price: 150.75 },
+//   { time: "10:30:02", price: 150.25 },
+//   { time: "10:30:03", price: 150.50 },
+//   { time: "10:30:04", price: 150.00 },
+//   { time: "10:30:05", price: 150.25 },
+//   { time: "10:30:06", price: 150.75 },
+//   { time: "10:30:07", price: 150.50 },
+//   { time: "10:30:08", price: 150.00 },
+//   { time: "10:30:09", price: 150.25 },
+// ];
+
+
 const app = App();
 
-app.ws("\*",{
+app.ws("/orderbook",{
 
   open: (ws: uWSWebSocket<unknown>) => {
   console.log("Client Connected");
+
+  let index = 0;
   
   let interval : NodeJS.Timer;
   interval = setInterval(()=>{
-     ws.send(JSON.stringify(orderBookData))
-  },10000);
+     ws.send(JSON.stringify(orderBookData[index]));
+     index = (index + 1) % orderBookData.length;
+  },900);
 
     (ws as any).interval = interval;
   
@@ -43,6 +60,40 @@ app.ws("\*",{
 
   
 
+});
+
+app.ws("/time-sales",{
+
+  open:(ws:uWSWebSocket<unknown>) =>{
+    console.log("Time&Sales Client connected");
+    // let index = 0;
+
+    // let interval : NodeJS.Timer;
+    // interval = setInterval(()=>{
+    //   ws.send(JSON.stringify(timeSalesData[index]));
+    //   index = (index + 1) % timeSalesData.length;
+    // },1000);
+
+    let wss = new WebSocket('wss://fstream.binance.com/ws/bnbusdt@aggTrade');
+
+    wss.onmessage = (event) =>{
+      ws.send(event.data);
+    }
+
+    (ws as any).wss = wss;
+
+  },
+
+  close:(ws:uWSWebSocket<unknown>)=>{
+    (ws as any).wss?.close();
+    console.log("Time&Sales client disconected");
+  },
+
+  message:(ws:uWSWebSocket<unknown>,message,isBinary) =>{
+      console.log(message,isBinary);
+  }
+
+  
 });
 
 app.listen(9001,(listenSocket) =>{
