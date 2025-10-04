@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 type ChartProps = {
     heading : string;
@@ -21,7 +21,7 @@ const BuyersSellersChart : React.FC<ChartProps> = ({
 }) => {
 
     const maxBarHeight = 180;
-    const maxValue = Math.max(buyers,sellers);
+    const maxValue = Math.max(buyers,sellers) || 1;
 
     const buyersHeight = (buyers/maxValue) * maxBarHeight;
     const sellersHeight = (sellers/maxValue) * maxBarHeight;
@@ -35,7 +35,9 @@ const BuyersSellersChart : React.FC<ChartProps> = ({
         </div>
         <div className="mb-4 flex items-center">
             <span className="text-[#7B8C6A]">Real-time</span>
-            <span className="ml-2 text-[#FF4B4B]">{percent}%</span>
+            <span className={`ml-2 ${percent >= 0 ? 'text-[#02ff2c]' : 'text-[#FF4B4B]'}`}>
+                {percent > 0 ? '+' : ''}{percent}%
+            </span>
         </div>
         <div
         className="flex gap-16 justify-around items-end mb-2" 
@@ -64,27 +66,154 @@ const BuyersSellersChart : React.FC<ChartProps> = ({
     );
 };
 
-const Dashboard : React.FC = () => (
-    <div className="bg-[#0D120E] p-4">
+
+
+type OrderBookRow = {
+    bidSize : number;
+    bidPrice : number;
+    askPrice : number;
+    askSize : number;
+}
+
+type TradeRow = {
+    T : number;
+    p : string;
+    q : string;
+    m : boolean;
+}
+
+const Dashboard : React.FC = () => {
+    const[orderBookData , setOrderData] = useState<OrderBookRow[]>([]);
+    const[tradeData , setTradeData] = useState<TradeRow[]>([]);
+
+    useEffect(()=>{
+
+        let ws = new WebSocket("ws://localhost:9001/orderbook");
+
+        ws.onmessage = (event) =>{
+            try{
+                const data = JSON.parse(event.data);
+                setOrderData(data);
+            }catch(err){
+                console.log("OrderBook data parsing error " , err);
+            }
+        };
+
+        ws.onerror = (error) =>{
+            console.log("OrderBook Websocket error" , error);
+        }
+
+        return ()=>ws.close();
+    },[]);
+
+    useEffect(()=>{
+
+        let ws = new WebSocket("ws://localhost:9001/time-sales");
+
+        ws.onmessage = (event) =>{
+            try{
+                const data = JSON.parse(event.data);
+                setTradeData((prev =>[data,...prev.slice(0,49)]));
+            }catch(err){
+                console.log("Trades data parsing error " , err);
+            }
+        };
+
+        ws.onerror = (error) =>{
+            console.log("Trades Websocket error" , error);
+        }
+
+        return ()=>ws.close();
+    },[]);
+
+    const calcDomPressure = () : {
+        buyers : number;
+        sellers : number;
+        percent : number;
+    } => {
+        
+        if(orderBookData.length == 0){
+            return {buyers : 0,sellers : 0,percent: 0};
+        }
+
+        let totalBidSize = 0;
+        let totalAskSize = 0;
+
+        orderBookData.forEach(row => {
+            totalBidSize += row.bidSize;
+            totalAskSize += row.askSize;
+        });
+
+        const percentDifference = totalBidSize + totalAskSize > 0 
+                                  ? ((totalBidSize - totalAskSize) / (totalBidSize + totalAskSize)) * 100 
+                                  : 0 ;
+
+        return {
+            buyers : Math.round(totalBidSize),
+            sellers : Math.round(totalAskSize),
+            percent : Math.round(percentDifference)
+        };
+    }
+
+    const calcTradePressure = () : {
+        buyers : number;
+        sellers : number;
+        percent : number;
+    } => {
+        
+        if(tradeData.length == 0){
+            return {buyers : 0,sellers : 0,percent: 0};
+        }
+
+        let buyerVolume = 0;
+        let sellerVolume = 0;
+
+        tradeData.forEach(trade => {
+           const quantity = parseFloat(trade.q || "0");
+           if(trade.m){
+            sellerVolume += quantity
+           }else{
+            buyerVolume +=quantity;
+           }
+        });
+
+        const percentDifference = buyerVolume + sellerVolume > 0 
+                                  ? ((buyerVolume - sellerVolume) / (buyerVolume + sellerVolume)) * 100 
+                                  : 0 ;
+
+        return {
+            buyers : Math.round(buyerVolume),
+            sellers : Math.round(sellerVolume),
+            percent : Math.round(percentDifference)
+        };
+    }
+
+    const domPressure = calcDomPressure();
+    const tradePressure = calcTradePressure();
+
+
+    return(
+     <div className="bg-[#0D120E] p-4">
         <BuyersSellersChart
          heading="Passive Participants (DOM)"
          subHeading="DOM Buyers vs. Sellers"
-         buyers={1200}
-         sellers={1500}
+         buyers={domPressure.buyers}
+         sellers={domPressure.sellers}
          buyerLabel="Buyers"
          sellerLabel="Sellers"
-         percent={-20}
+         percent={domPressure.percent}
         />
         <BuyersSellersChart
          heading="Active Participants (Time & Sales)"
          subHeading="Time & Sales Buyers vs. Sellers"
-         buyers={1900}
-         sellers={2500}
+         buyers={tradePressure.buyers}
+         sellers={tradePressure.sellers}
          buyerLabel="Buyers"
          sellerLabel="Sellers"
-         percent={-10}
+         percent={tradePressure.percent}
         />
     </div>
-)
+    )
+}
 
 export default Dashboard;

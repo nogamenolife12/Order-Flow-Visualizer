@@ -7,20 +7,18 @@ import OrderBook from './OrderBook';
 import OrderFlowVisualizer from './Sections';
 import TimeAndSales from './Time&Sales';
 import Dashboard from './Graphs';
-import DashboardLayout from './Graphs';
+
 
 function App() {
   return (
     <>
    
     <Header></Header>
-    <div className='flex justify-around'>
+    <div className='flex justify-around w-screen'>
     <TimeAndSales></TimeAndSales>
-    <OrderFlowVisualizer/>
+    <OrderFlowVisualizer></OrderFlowVisualizer>
     </div>
     
-    
-
     </>
 
    

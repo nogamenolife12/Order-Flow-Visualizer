@@ -22,12 +22,8 @@ const OrderBook : React.FC = () =>{
         };
 
         ws.onmessage = (event) => {
-            const newRow: OrderRow = JSON.parse(event.data);
-            setOrder((prev) => {
-                const updated = [...prev, newRow]; // append new row
-                if (updated.length > 10) updated.shift(); // keep max 10 rows
-                return updated;
-            });
+            const data = JSON.parse(event.data);
+            setOrder(data);
             
         };
 
@@ -39,7 +35,7 @@ const OrderBook : React.FC = () =>{
     },[]);
 
     return(
-    <section className="px-6 py-0 min-h-[500px]">
+    <section className="px-6 py-0 min-h-[500px] w-full">
         <h2 className="text-lg text-white font-semibold mb-4">Passive Actvity</h2>
         <div className="overflow-x-auto">
             <table className="min-w-full bg-[#0D120E] rounded-md border border-[#212D21]">
@@ -62,10 +58,10 @@ const OrderBook : React.FC = () =>{
                 <tbody>
                     {orderBookData.map((row,idx) => (
                         <tr key={idx} className="border-t border-[#212D21]">
-                            <td className="px-20 py-4 text-[#B0B8B2]">{row.bidSize}</td>
+                            <td className="px-20 py-4 text-[#B0B8B2]">{row.bidSize.toLocaleString()}</td>
                             <td className="px-20 py-4 text-[#B0B8B2]">{row.bidPrice.toFixed(2)}</td>
                             <td className="px-20 py-4 text-[#B0B8B2]">{row.askPrice.toFixed(2)}</td>
-                            <td className="px-20 py-4 text-[#B0B8B2]">{row.askSize}</td>
+                            <td className="px-20 py-4 text-[#B0B8B2]">{row.askSize.toLocaleString()}</td>
                         </tr>
                     ))}
                 </tbody>
